@@ -15,17 +15,17 @@ from scipy.spatial import ConvexHull, Delaunay
     # termination criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-def calib (criteria):  
-    lin = 7 # linha no CB
-    col = 7 # coluna no CB
-    # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
+def calib (criteria): #Encontrando a distorção radial da camera para calibrar a imagem 
+    lin = 7 # linha no Cartão Xadrez
+    col = 7 # coluna no Cartão Xadrez
+    # preparar as posições em pontos, criando os espaços em: (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
     objp = np.zeros((col*lin,3), np.float32)
     objp[:,:2] = np.mgrid[0:lin,0:col].T.reshape(-1,2)
     
-    # Arrays to store object points and image points from all the images.
-    objpoints = [] # 3d point in real world space
+    # Arrays para guardar os pontos de todas as imagens
+    objpoints = [] # 3d no plano da figura
     objp = objp.reshape(-1,1,3)
-    imgpoints = [] # 2d points in image plane.
+    imgpoints = [] # 2d no plano da imagem.
     
     cont= 0
     path = "c:/Users/gguic/Desktop/TCC/fotos/"
@@ -35,17 +35,17 @@ def calib (criteria):
         img = cv2.imread(fname)
         gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         # cv2.imshow('img', cv2.resize(gray,(600,400)))
-    # Find the chess board corners
+    # Encontrar os cantos do xadrez 
         ret, corners = cv2.findChessboardCorners(gray, (lin,col),None)
     
-    # If found, add object points, image points (after refining them)
+    # Se achou, adicionar os pontos 2d e 3d (já refinados)
         if ret == True:
             objpoints.append(objp)
     
             corners2 = cv2.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
             imgpoints.append(corners2)
     
-        # Draw and display the corners
+        # Mostrando os cantos
             # img2 = cv2.drawChessboardCorners(img, (lin,col), corners2, ret)
             # cv2.imshow('img2',cv2.resize(img2, (600,400)))
             # cv2.waitKey(500)
@@ -62,6 +62,7 @@ def calib (criteria):
     return [ret, mtx, dist, rvecs, tvecs]
 
 def superf(mtx, dist):
+
     file = "C:/Users/gguic/Desktop/TCC/fotos/new_dog*l.jpg"
     maxx = 4
     n=0
@@ -83,11 +84,10 @@ def superf(mtx, dist):
         h = img1.shape[0]
         w = img1.shape[1]
         newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
-        # undistort
         mapx,mapy = cv2.initUndistortRectifyMap(mtx,dist,None,newcameramtx,(w,h),5)
         dst = cv2.remap(img1,mapx,mapy,cv2.INTER_LINEAR)
 
-        # crop the image
+        # recortando a imagem sem a distorção
         x,y,w,h = roi
         dst = dst[y:y+h, x:x+w]
         # a=cv2.imwrite('calibresult.png',dst)
@@ -98,17 +98,10 @@ def superf(mtx, dist):
         #zeros= np.zeros(img.shape[:2], dtype = "unit8")
         (az, verd, verm) = cv2.split(img)
         (az2, verd2, verm2) = cv2.split(img2)
-        # cv2.imread(verm)
-        # while(True):
-        #     cv2.imshow('img', cv2.resize(verm, (600,400)))
-        #     if cv2.waitKey(10) == 27:
-        #         cv2.destroyAllWindows()
-        #     break
+
 
         edges = cv2.Canny(verm,20, 110)
         verm2 = cv2.Canny(verm2,100, 150)
-
-
 
         a, b = int(img.shape[0]),int(img.shape[1])
         z0=645
@@ -161,7 +154,7 @@ def superf(mtx, dist):
     # if (cont>maxx):
     #     break
     # '''termina de ler as imagens, saindo do loop'''
-    # Creating figure
+    # criando a figura com os pontos encontrados
     fig = plt.figure(figsize = (10, 7))
     ax = plt.axes(projection ="3d")
     pts = []
@@ -176,7 +169,7 @@ def superf(mtx, dist):
     pts = np.asarray(pts)
     
     
-    # Creating plot
+    # Plotando os pontos
     for k in range(cont):
         ax.scatter3D(pointcloud[k][0],pointcloud[k][1],pointcloud[k][2], color = "green", marker='.')
     
